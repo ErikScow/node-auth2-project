@@ -7,10 +7,11 @@ exports.up = function(knex) {
           .notNullable()
       tbl.text('password')
           .notNullable()
+      tbl.text('department')
     })
   };
   
   exports.down = function(knex) {
-    knex.schema.dropTableIfExists('users')
+    return knex.schema.dropTableIfExists('users')
   };
   
