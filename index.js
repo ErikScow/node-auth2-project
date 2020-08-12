@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 const db = require('./db-config')
-const secret = require('./config/secrets')
+const secrets = require('./config/secrets')
 
 const server = express()
 
@@ -45,13 +45,39 @@ server.post('/api/login', (req, res) => {
         })
 })
 
-server.get('/api/users', (req, res) => {
-
+server.get('/api/users', validateToken, (req, res) => {
+    db('users')
+        .then(users => {
+            res.status(200).json(users)
+        })
+        .catch(err => {
+            console.log(err)
+            res.status(500).json({message: "could not get from database"})
+        })
 })
 
 server.listen(5000, () => {
     console.log(`server listening on port 5000`)
 })
+
+
+function validateToken(req, res, next){
+    const [authType, token] = req.headers.authorization.split(' ')
+
+    if (token) {
+        jwt.verify(token, secrets.jwtSecret, (err, decodedToken) => {
+            if (err) {
+                res.status(401).json({ message: "invalid token"})
+            } else {
+                req.decodedJwt = decodedToken
+                next()
+            }
+        })
+    } else {
+        res.status(401).json({message: 'no token incuded'})
+    }
+}
+
 
 function generateToken(user){
     const payload = {
@@ -64,5 +90,5 @@ function generateToken(user){
         expiresIn: '1d'
     }
 
-    return jwt.sign(payload, secret.jwtSecret, options)
+    return jwt.sign(payload, secrets.jwtSecret, options)
 }
